@@ -75,16 +75,12 @@ public:
             throw IndexOutOfRangeException("ArraySequenceBase: invalid subsequence range");
         }
 
-        Sequence<T>* result = this->CreateEmpty();
-        try {
-            for (int i = startIndex; i <= endIndex; ++i) {
-                this->AppendToResult(result, data.Get(i));
-            }
-            return result;
-        } catch (...) {
-            delete result;
-            throw;
+        HeapCleaner<Sequence<T>> result(this->CreateEmpty());
+        for (int i = startIndex; i <= endIndex; ++i) {
+            this->AppendToResult(result.Ref(), data.Get(i));
         }
+
+        return result.Release();
     }
 
     int GetLength() const override {
@@ -97,38 +93,35 @@ public:
 
     Sequence<T>* Append(T item) override {
         ArraySequenceBase<T>* target = Instance();
-        try {
-            return target->AppendInternal(item);
-        } catch (...) {
-            if (target != this) {
-                delete target;
-            }
-            throw;
+        HeapCleaner<ArraySequenceBase<T>> targetGuard((target == this) ? nullptr : target);
+
+        Sequence<T>* result = target->AppendInternal(item);
+        if (result == target) {
+            targetGuard.Release();
         }
+        return result;
     }
 
     Sequence<T>* Prepend(T item) override {
         ArraySequenceBase<T>* target = Instance();
-        try {
-            return target->PrependInternal(item);
-        } catch (...) {
-            if (target != this) {
-                delete target;
-            }
-            throw;
+        HeapCleaner<ArraySequenceBase<T>> targetGuard((target == this) ? nullptr : target);
+
+        Sequence<T>* result = target->PrependInternal(item);
+        if (result == target) {
+            targetGuard.Release();
         }
+        return result;
     }
 
     Sequence<T>* InsertAt(T item, int index) override {
         ArraySequenceBase<T>* target = Instance();
-        try {
-            return target->InsertAtInternal(item, index);
-        } catch (...) {
-            if (target != this) {
-                delete target;
-            }
-            throw;
+        HeapCleaner<ArraySequenceBase<T>> targetGuard((target == this) ? nullptr : target);
+
+        Sequence<T>* result = target->InsertAtInternal(item, index);
+        if (result == target) {
+            targetGuard.Release();
         }
+        return result;
     }
 
     Sequence<T>* Concat(Sequence<T>* list) const override {
@@ -136,22 +129,14 @@ public:
             throw InvalidArgumentException("ArraySequenceBase: null pointer in Concat");
         }
 
-        Sequence<T>* result = this->Clone();
-        IEnumerator<T>* enumerator = nullptr;
+        HeapCleaner<Sequence<T>> result(this->Clone());
+        HeapCleaner<IEnumerator<T>> enumerator(list->GetEnumerator());
 
-        try {
-            enumerator = list->GetEnumerator();
-            while (enumerator->MoveNext()) {
-                this->AppendToResult(result, enumerator->Current());
-            }
-
-            delete enumerator;
-            return result;
-        } catch (...) {
-            delete enumerator;
-            delete result;
-            throw;
+        while (enumerator->MoveNext()) {
+            this->AppendToResult(result.Ref(), enumerator->Current());
         }
+
+        return result.Release();
     }
 };
 

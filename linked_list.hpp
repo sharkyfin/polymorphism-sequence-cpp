@@ -2,6 +2,7 @@
 #define LINKED_LIST_H
 
 #include "exceptions.hpp"
+#include "heap_cleaner.hpp"
 #include "ienumerator.hpp"
 
 template <class T>
@@ -181,22 +182,15 @@ public:
             throw IndexOutOfRangeException("LinkedList: invalid sublist range");
         }
 
-        LinkedList<T>* result = new LinkedList<T>();
-        IEnumerator<T>* enumerator = nullptr;
-        try {
-            enumerator = GetEnumerator(startIndex);
-            int count = endIndex - startIndex + 1;
-            for (int i = 0; i < count && enumerator->MoveNext(); ++i) {
-                result->Append(enumerator->Current());
-            }
+        HeapCleaner<LinkedList<T>> result(new LinkedList<T>());
+        HeapCleaner<IEnumerator<T>> enumerator(GetEnumerator(startIndex));
 
-            delete enumerator;
-            return result;
-        } catch (...) {
-            delete enumerator;
-            delete result;
-            throw;
+        int count = endIndex - startIndex + 1;
+        for (int i = 0; i < count && enumerator->MoveNext(); ++i) {
+            result->Append(enumerator->Current());
         }
+
+        return result.Release();
     }
 
     int GetLength() const {
@@ -258,21 +252,14 @@ public:
             throw InvalidArgumentException("LinkedList: null pointer in Concat");
         }
 
-        LinkedList<T>* result = new LinkedList<T>(*this);
-        IEnumerator<T>* enumerator = nullptr;
-        try {
-            enumerator = list->GetEnumerator();
-            while (enumerator->MoveNext()) {
-                result->Append(enumerator->Current());
-            }
+        HeapCleaner<LinkedList<T>> result(new LinkedList<T>(*this));
+        HeapCleaner<IEnumerator<T>> enumerator(list->GetEnumerator());
 
-            delete enumerator;
-            return result;
-        } catch (...) {
-            delete enumerator;
-            delete result;
-            throw;
+        while (enumerator->MoveNext()) {
+            result->Append(enumerator->Current());
         }
+
+        return result.Release();
     }
 };
 
