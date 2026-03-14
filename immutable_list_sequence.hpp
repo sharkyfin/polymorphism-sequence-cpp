@@ -11,29 +11,6 @@ protected:
     }
 
 public:
-    class Iterator {
-    private:
-        const ImmutableListSequence<T>* sequence;
-        int index;
-
-    public:
-        Iterator(const ImmutableListSequence<T>* sequencePtr, int currentIndex)
-            : sequence(sequencePtr), index(currentIndex) {}
-
-        T operator*() const {
-            return sequence->Get(index);
-        }
-
-        Iterator& operator++() {
-            ++index;
-            return *this;
-        }
-
-        bool operator!=(const Iterator& other) const {
-            return sequence != other.sequence || index != other.index;
-        }
-    };
-
     ImmutableListSequence() : ListSequenceBase<T>() {}
 
     ImmutableListSequence(T* items, int count) : ListSequenceBase<T>(items, count) {}
@@ -46,14 +23,6 @@ public:
 
     Sequence<T>* CreateEmpty() const override {
         return new ImmutableListSequence<T>();
-    }
-
-    Iterator begin() const {
-        return Iterator(this, 0);
-    }
-
-    Iterator end() const {
-        return Iterator(this, this->GetLength());
     }
 };
 

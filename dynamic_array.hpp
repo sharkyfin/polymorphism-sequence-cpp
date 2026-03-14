@@ -2,15 +2,81 @@
 #define DYNAMIC_ARRAY_H
 
 #include "exceptions.hpp"
+#include "ienumerator.hpp"
 
 template <class T>
 class DynamicArray {
 private:
     T* data;
     int size;
+    int capacity;
+
+    int RecommendedCapacity(int requiredSize) const {
+        int newCapacity = (capacity > 0) ? capacity : 1;
+        while (newCapacity < requiredSize) {
+            newCapacity *= 2;
+        }
+        return newCapacity;
+    }
+
+    void Reallocate(int newCapacity) {
+        T* newData = nullptr;
+        if (newCapacity > 0) {
+            newData = new T[newCapacity];
+            int copyCount = (size < newCapacity) ? size : newCapacity;
+            try {
+                for (int i = 0; i < copyCount; ++i) {
+                    newData[i] = data[i];
+                }
+            } catch (...) {
+                delete[] newData;
+                throw;
+            }
+        }
+
+        delete[] data;
+        data = newData;
+        capacity = newCapacity;
+        if (size > capacity) {
+            size = capacity;
+        }
+    }
 
 public:
-    DynamicArray(T* items, int count) : data(nullptr), size(0) {
+    class Enumerator : public IEnumerator<T> {
+    private:
+        const DynamicArray<T>* array;
+        int index;
+        bool started;
+
+    public:
+        explicit Enumerator(const DynamicArray<T>* owner)
+            : array(owner), index(-1), started(false) {}
+
+        bool MoveNext() override {
+            if (!started) {
+                index = 0;
+                started = true;
+            } else {
+                ++index;
+            }
+            return index < array->size;
+        }
+
+        T Current() const override {
+            if (!started || index < 0 || index >= array->size) {
+                throw EmptyCollectionException("DynamicArray::Enumerator: no current element");
+            }
+            return array->data[index];
+        }
+
+        void Reset() override {
+            index = -1;
+            started = false;
+        }
+    };
+
+    DynamicArray(T* items, int count) : data(nullptr), size(0), capacity(0) {
         if (count < 0) {
             throw InvalidArgumentException("DynamicArray: negative count");
         }
@@ -19,8 +85,9 @@ public:
         }
 
         size = count;
-        if (size > 0) {
-            T* newData = new T[size];
+        capacity = count;
+        if (capacity > 0) {
+            T* newData = new T[capacity];
             try {
                 for (int i = 0; i < size; ++i) {
                     newData[i] = items[i];
@@ -33,20 +100,22 @@ public:
         }
     }
 
-    explicit DynamicArray(int newSize) : data(nullptr), size(0) {
+    explicit DynamicArray(int newSize) : data(nullptr), size(0), capacity(0) {
         if (newSize < 0) {
             throw InvalidArgumentException("DynamicArray: negative size");
         }
 
         size = newSize;
-        if (size > 0) {
-            data = new T[size];
+        capacity = newSize;
+        if (capacity > 0) {
+            data = new T[capacity];
         }
     }
 
-    DynamicArray(const DynamicArray<T>& other) : data(nullptr), size(other.size) {
-        if (size > 0) {
-            T* newData = new T[size];
+    DynamicArray(const DynamicArray<T>& other)
+        : data(nullptr), size(other.size), capacity(other.capacity) {
+        if (capacity > 0) {
+            T* newData = new T[capacity];
             try {
                 for (int i = 0; i < size; ++i) {
                     newData[i] = other.data[i];
@@ -65,8 +134,8 @@ public:
         }
 
         T* newData = nullptr;
-        if (other.size > 0) {
-            newData = new T[other.size];
+        if (other.capacity > 0) {
+            newData = new T[other.capacity];
             try {
                 for (int i = 0; i < other.size; ++i) {
                     newData[i] = other.data[i];
@@ -80,11 +149,16 @@ public:
         delete[] data;
         data = newData;
         size = other.size;
+        capacity = other.capacity;
         return *this;
     }
 
     ~DynamicArray() {
         delete[] data;
+    }
+
+    IEnumerator<T>* GetEnumerator() const {
+        return new Enumerator(this);
     }
 
     T Get(int index) const {
@@ -98,11 +172,24 @@ public:
         return size;
     }
 
+    int GetCapacity() const {
+        return capacity;
+    }
+
     void Set(int index, T value) {
         if (index < 0 || index >= size) {
             throw IndexOutOfRangeException("DynamicArray: index out of range");
         }
         data[index] = value;
+    }
+    void PushBack(T value) {
+        if (size == capacity) {
+            int newCapacity = (capacity == 0) ? 1 : capacity * 2;
+            Reallocate(newCapacity);
+        }
+
+        data[size] = value;
+        ++size;
     }
 
     void Resize(int newSize) {
@@ -110,23 +197,10 @@ public:
             throw InvalidArgumentException("DynamicArray: negative size in Resize");
         }
 
-        T* newData = nullptr;
-        if (newSize > 0) {
-            newData = new T[newSize];
-
-            int copyCount = (newSize < size) ? newSize : size;
-            try {
-                for (int i = 0; i < copyCount; ++i) {
-                    newData[i] = data[i];
-                }
-            } catch (...) {
-                delete[] newData;
-                throw;
-            }
+        if (newSize > capacity) {
+            Reallocate(RecommendedCapacity(newSize));
         }
 
-        delete[] data;
-        data = newData;
         size = newSize;
     }
 };

@@ -69,6 +69,10 @@ public:
         return data.GetLength();
     }
 
+    IEnumerator<T>* GetEnumerator() const override {
+        return data.GetEnumerator();
+    }
+
     Sequence<T>* Append(T item) override {
         ListSequenceBase<T>* target = Instance();
         try {

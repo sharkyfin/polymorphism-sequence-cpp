@@ -93,37 +93,43 @@ void ReplaceSequenceIfNeeded(Sequence<int>*& current, Sequence<int>* result) {
     }
 }
 
-void PrintMenu() {
-    std::cout << "\n===== МЕНЮ =====\n";
+void PrintSequenceTypeOptions() {
+    std::cout << "1 - MutableArraySequence, 2 - ImmutableArraySequence, "
+              << "3 - MutableListSequence, 4 - ImmutableListSequence\n";
+}
+
+void PrintCreationMenu() {
+    std::cout << "\n===== ВЫБОР ТИПА ПОСЛЕДОВАТЕЛЬНОСТИ =====\n";
     std::cout << "1. Создать MutableArraySequence\n";
     std::cout << "2. Создать ImmutableArraySequence\n";
     std::cout << "3. Создать MutableListSequence\n";
     std::cout << "4. Создать ImmutableListSequence\n";
-    std::cout << "5. Показать элементы\n";
-    std::cout << "6. Append элемент\n";
-    std::cout << "7. Prepend элемент\n";
-    std::cout << "8. InsertAt\n";
-    std::cout << "9. operator[] / получить элемент\n";
-    std::cout << "10. Получить подпоследовательность\n";
-    std::cout << "11. Конкатенировать последовательности\n";
-    std::cout << "12. Запустить все тесты\n";
-    std::cout << "13. Сравнить последовательности (==, !=)\n";
-    std::cout << "14. Map\n";
-    std::cout << "15. Where\n";
-    std::cout << "16. Reduce\n";
-    std::cout << "17. Find\n";
-    std::cout << "18. Split\n";
-    std::cout << "19. Slice(index, count)\n";
-    std::cout << "20. Slice(index, count, replacement)\n";
-    std::cout << "21. Zip с другой последовательностью\n";
-    std::cout << "22. Unzip последнего zip\n";
+    std::cout << "5. Запустить все тесты\n";
     std::cout << "0. Выход\n";
 }
 
-void RequireCurrent(const Sequence<int>* current) {
-    if (current == nullptr) {
-        throw InvalidArgumentException("Сначала создайте последовательность");
-    }
+void PrintOperationsMenu() {
+    std::cout << "\n===== ОПЕРАЦИИ С ТЕКУЩЕЙ ПОСЛЕДОВАТЕЛЬНОСТЬЮ =====\n";
+    std::cout << "1. Показать элементы\n";
+    std::cout << "2. Append элемент\n";
+    std::cout << "3. Prepend элемент\n";
+    std::cout << "4. InsertAt\n";
+    std::cout << "5. operator[] / получить элемент\n";
+    std::cout << "6. Получить подпоследовательность\n";
+    std::cout << "7. Конкатенировать последовательности\n";
+    std::cout << "8. Сравнить последовательности (==, !=)\n";
+    std::cout << "9. Map\n";
+    std::cout << "10. Where\n";
+    std::cout << "11. Reduce\n";
+    std::cout << "12. Find\n";
+    std::cout << "13. Split\n";
+    std::cout << "14. Slice(index, count)\n";
+    std::cout << "15. Slice(index, count, replacement)\n";
+    std::cout << "16. Zip с другой последовательностью\n";
+    std::cout << "17. Unzip последнего zip\n";
+    std::cout << "18. Сменить тип последовательности\n";
+    std::cout << "19. Запустить все тесты\n";
+    std::cout << "0. Выход\n";
 }
 
 int main() {
@@ -132,43 +138,61 @@ int main() {
     bool running = true;
 
     while (running) {
-        PrintMenu();
-        int command = ReadInt("Выберите пункт: ");
-
         try {
-            switch (command) {
-                case 1:
-                case 2:
-                case 3:
-                case 4: {
-                    Sequence<int>* created = CreateSequenceByType(command);
-                    delete current;
-                    current = created;
-                    std::cout << "Последовательность создана.\n";
-                    break;
+            if (current == nullptr) {
+                PrintCreationMenu();
+                int createCommand = ReadInt("Выберите пункт: ");
+                switch (createCommand) {
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4: {
+                        current = CreateSequenceByType(createCommand);
+                        std::cout << "Последовательность создана.\n";
+                        break;
+                    }
+                    case 5: {
+                        bool ok = RunAllTests();
+                        if (ok) {
+                            std::cout << "Все тесты пройдены.\n";
+                        } else {
+                            std::cout << "Есть упавшие тесты.\n";
+                        }
+                        break;
+                    }
+                    case 0: {
+                        running = false;
+                        break;
+                    }
+                    default:
+                        std::cout << "Неизвестный пункт меню.\n";
+                        break;
                 }
-                case 5: {
+                continue;
+            }
+
+            PrintOperationsMenu();
+            int command = ReadInt("Выберите пункт: ");
+            switch (command) {
+                case 1: {
                     PrintSequence(current);
                     break;
                 }
-                case 6: {
-                    RequireCurrent(current);
+                case 2: {
                     int value = ReadInt("Введите элемент для Append: ");
                     Sequence<int>* result = current->Append(value);
                     ReplaceSequenceIfNeeded(current, result);
                     std::cout << "Append выполнен.\n";
                     break;
                 }
-                case 7: {
-                    RequireCurrent(current);
+                case 3: {
                     int value = ReadInt("Введите элемент для Prepend: ");
                     Sequence<int>* result = current->Prepend(value);
                     ReplaceSequenceIfNeeded(current, result);
                     std::cout << "Prepend выполнен.\n";
                     break;
                 }
-                case 8: {
-                    RequireCurrent(current);
+                case 4: {
                     int value = ReadInt("Введите элемент: ");
                     int index = ReadInt("Введите индекс: ");
                     Sequence<int>* result = current->InsertAt(value, index);
@@ -176,14 +200,12 @@ int main() {
                     std::cout << "InsertAt выполнен.\n";
                     break;
                 }
-                case 9: {
-                    RequireCurrent(current);
+                case 5: {
                     int index = ReadInt("Введите индекс: ");
                     std::cout << "Элемент (operator[]): " << (*current)[index] << "\n";
                     break;
                 }
-                case 10: {
-                    RequireCurrent(current);
+                case 6: {
                     int startIndex = ReadInt("Введите startIndex: ");
                     int endIndex = ReadInt("Введите endIndex: ");
                     Sequence<int>* sub = current->GetSubsequence(startIndex, endIndex);
@@ -191,11 +213,9 @@ int main() {
                     delete sub;
                     break;
                 }
-                case 11: {
-                    RequireCurrent(current);
+                case 7: {
                     std::cout << "Создайте вторую последовательность для конкатенации:\n";
-                    std::cout << "1 - MutableArraySequence, 2 - ImmutableArraySequence, "
-                              << "3 - MutableListSequence, 4 - ImmutableListSequence\n";
+                    PrintSequenceTypeOptions();
                     int type = ReadInt("Введите тип: ");
                     Sequence<int>* other = CreateSequenceByType(type);
                     try {
@@ -210,20 +230,9 @@ int main() {
                     std::cout << "Concat (operator+) выполнен.\n";
                     break;
                 }
-                case 12: {
-                    bool ok = RunAllTests();
-                    if (ok) {
-                        std::cout << "Все тесты пройдены.\n";
-                    } else {
-                        std::cout << "Есть упавшие тесты.\n";
-                    }
-                    break;
-                }
-                case 13: {
-                    RequireCurrent(current);
+                case 8: {
                     std::cout << "Создайте вторую последовательность для сравнения:\n";
-                    std::cout << "1 - MutableArraySequence, 2 - ImmutableArraySequence, "
-                              << "3 - MutableListSequence, 4 - ImmutableListSequence\n";
+                    PrintSequenceTypeOptions();
                     int type = ReadInt("Введите тип: ");
                     Sequence<int>* other = CreateSequenceByType(type);
                     bool eq = (*current == *other);
@@ -233,8 +242,7 @@ int main() {
                     delete other;
                     break;
                 }
-                case 14: {
-                    RequireCurrent(current);
+                case 9: {
                     std::cout << "Map: 1) x*2  2) x*x  3) x+10\n";
                     int mapType = ReadInt("Выберите тип map: ");
                     Sequence<int>* mapped = nullptr;
@@ -251,8 +259,7 @@ int main() {
                     std::cout << "Map выполнен.\n";
                     break;
                 }
-                case 15: {
-                    RequireCurrent(current);
+                case 10: {
                     std::cout << "Where: 1) четные  2) больше заданного\n";
                     int whereType = ReadInt("Выберите тип where: ");
                     Sequence<int>* filtered = nullptr;
@@ -268,8 +275,7 @@ int main() {
                     std::cout << "Where выполнен.\n";
                     break;
                 }
-                case 16: {
-                    RequireCurrent(current);
+                case 11: {
                     std::cout << "Reduce: 1) сумма  2) максимум\n";
                     int reduceType = ReadInt("Выберите тип reduce: ");
                     int reduced = 0;
@@ -285,8 +291,7 @@ int main() {
                     std::cout << "Результат reduce: " << reduced << "\n";
                     break;
                 }
-                case 17: {
-                    RequireCurrent(current);
+                case 12: {
                     int target = ReadInt("Введите искомый элемент: ");
                     int index = current->Find([target](int value) { return value == target; });
                     if (index == -1) {
@@ -296,8 +301,7 @@ int main() {
                     }
                     break;
                 }
-                case 18: {
-                    RequireCurrent(current);
+                case 13: {
                     int delimiter = ReadInt("Введите значение-разделитель: ");
                     int keep = ReadInt("Сохранять пустые части? (1 - да, 0 - нет): ");
                     bool keepEmpty = (keep == 1);
@@ -311,8 +315,7 @@ int main() {
                     }
                     break;
                 }
-                case 19: {
-                    RequireCurrent(current);
+                case 14: {
                     int index = ReadInt("Введите index: ");
                     int count = ReadInt("Введите count: ");
                     Sequence<int>* result = current->Slice(index, count);
@@ -320,8 +323,7 @@ int main() {
                     std::cout << "Slice(index, count) выполнен.\n";
                     break;
                 }
-                case 20: {
-                    RequireCurrent(current);
+                case 15: {
                     int index = ReadInt("Введите index: ");
                     int count = ReadInt("Введите count: ");
 
@@ -341,11 +343,9 @@ int main() {
                     std::cout << "Slice(index, count, replacement) выполнен.\n";
                     break;
                 }
-                case 21: {
-                    RequireCurrent(current);
+                case 16: {
                     std::cout << "Создайте вторую последовательность для Zip:\n";
-                    std::cout << "1 - MutableArraySequence, 2 - ImmutableArraySequence, "
-                              << "3 - MutableListSequence, 4 - ImmutableListSequence\n";
+                    PrintSequenceTypeOptions();
                     int type = ReadInt("Введите тип: ");
                     Sequence<int>* other = CreateSequenceByType(type);
 
@@ -366,7 +366,7 @@ int main() {
                     PrintPairSequence(zippedPairs);
                     break;
                 }
-                case 22: {
+                case 17: {
                     if (zippedPairs == nullptr) {
                         throw InvalidArgumentException("Сначала выполните Zip");
                     }
@@ -376,6 +376,25 @@ int main() {
                     std::cout << "Unzip результат (second): " << *unzipped.second << "\n";
                     delete unzipped.first;
                     delete unzipped.second;
+                    break;
+                }
+                case 18: {
+                    std::cout << "Выберите новый тип последовательности:\n";
+                    PrintSequenceTypeOptions();
+                    int type = ReadInt("Введите тип: ");
+                    Sequence<int>* created = CreateSequenceByType(type);
+                    delete current;
+                    current = created;
+                    std::cout << "Тип последовательности изменен.\n";
+                    break;
+                }
+                case 19: {
+                    bool ok = RunAllTests();
+                    if (ok) {
+                        std::cout << "Все тесты пройдены.\n";
+                    } else {
+                        std::cout << "Есть упавшие тесты.\n";
+                    }
                     break;
                 }
                 case 0: {

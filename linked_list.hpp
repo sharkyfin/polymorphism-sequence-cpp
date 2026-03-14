@@ -2,6 +2,7 @@
 #define LINKED_LIST_H
 
 #include "exceptions.hpp"
+#include "ienumerator.hpp"
 
 template <class T>
 class LinkedList {
@@ -57,6 +58,39 @@ private:
     }
 
 public:
+    class Enumerator : public IEnumerator<T> {
+    private:
+        const LinkedList<T>* list;
+        const Node* current;
+        bool started;
+
+    public:
+        explicit Enumerator(const LinkedList<T>* owner)
+            : list(owner), current(nullptr), started(false) {}
+
+        bool MoveNext() override {
+            if (!started) {
+                current = list->head;
+                started = true;
+            } else if (current != nullptr) {
+                current = current->next;
+            }
+            return current != nullptr;
+        }
+
+        T Current() const override {
+            if (current == nullptr) {
+                throw EmptyCollectionException("LinkedList::Enumerator: no current element");
+            }
+            return current->value;
+        }
+
+        void Reset() override {
+            current = nullptr;
+            started = false;
+        }
+    };
+
     LinkedList() : head(nullptr), tail(nullptr), length(0) {}
 
     LinkedList(T* items, int count) : head(nullptr), tail(nullptr), length(0) {
@@ -102,6 +136,10 @@ public:
 
     ~LinkedList() {
         Clear();
+    }
+
+    IEnumerator<T>* GetEnumerator() const {
+        return new Enumerator(this);
     }
 
     T GetFirst() const {

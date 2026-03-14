@@ -12,9 +12,7 @@ protected:
     virtual ArraySequenceBase<T>* Instance() = 0;
 
     Sequence<T>* AppendInternal(T item) {
-        int oldSize = data.GetSize();
-        data.Resize(oldSize + 1);
-        data.Set(oldSize, item);
+        data.PushBack(item);
         return this;
     }
 
@@ -91,6 +89,10 @@ public:
 
     int GetLength() const override {
         return data.GetSize();
+    }
+
+    IEnumerator<T>* GetEnumerator() const override {
+        return data.GetEnumerator();
     }
 
     Sequence<T>* Append(T item) override {

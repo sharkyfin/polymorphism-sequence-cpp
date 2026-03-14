@@ -5,6 +5,7 @@
 
 #include "dynamic_array.hpp"
 #include "icollection.hpp"
+#include "ienumerator.hpp"
 
 template <class T>
 class Sequence : public ICollection<T> {
@@ -37,6 +38,7 @@ public:
     virtual Sequence<T>* Concat(Sequence<T>* list) const = 0;
     virtual Sequence<T>* Clone() const override = 0;
     virtual Sequence<T>* CreateEmpty() const = 0;
+    virtual IEnumerator<T>* GetEnumerator() const = 0;
 
     virtual ~Sequence() = default;
 
@@ -235,12 +237,24 @@ Sequence<T>* operator+(const Sequence<T>& sequence, T item) {
 template <class T>
 std::ostream& operator<<(std::ostream& output, const Sequence<T>& sequence) {
     output << "[";
-    for (int i = 0; i < sequence.GetLength(); ++i) {
-        output << sequence.Get(i);
-        if (i + 1 < sequence.GetLength()) {
-            output << ", ";
+
+    IEnumerator<T>* enumerator = nullptr;
+    try {
+        enumerator = sequence.GetEnumerator();
+        bool first = true;
+        while (enumerator->MoveNext()) {
+            if (!first) {
+                output << ", ";
+            }
+            output << enumerator->Current();
+            first = false;
         }
+        delete enumerator;
+    } catch (...) {
+        delete enumerator;
+        throw;
     }
+
     output << "]";
     return output;
 }

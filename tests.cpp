@@ -78,6 +78,18 @@ void TestDynamicArrayResizeSetGet() {
     Assert(arr.Get(0) == 5, "DynamicArray: wrong value after Resize down");
 }
 
+void TestDynamicArrayPushBack() {
+    DynamicArray<int> arr(0);
+
+    for (int i = 1; i <= 5; ++i) {
+        arr.PushBack(i);
+    }
+
+    Assert(arr.GetSize() == 5, "DynamicArray: wrong size after PushBack");
+    Assert(arr.Get(0) == 1 && arr.Get(4) == 5, "DynamicArray: wrong values after PushBack");
+    Assert(arr.GetCapacity() >= arr.GetSize(), "DynamicArray: capacity must be >= size");
+}
+
 void TestDynamicArrayIndexErrors() {
     DynamicArray<int> arr(1);
 
@@ -328,14 +340,18 @@ void TestIteration() {
     MutableListSequence<int> listSeq(items, 4);
 
     int arraySum = 0;
-    for (int value : arraySeq) {
-        arraySum += value;
+    IEnumerator<int>* arrayEnumerator = arraySeq.GetEnumerator();
+    while (arrayEnumerator->MoveNext()) {
+        arraySum += arrayEnumerator->Current();
     }
+    delete arrayEnumerator;
 
     int listSum = 0;
-    for (int value : listSeq) {
-        listSum += value;
+    IEnumerator<int>* listEnumerator = listSeq.GetEnumerator();
+    while (listEnumerator->MoveNext()) {
+        listSum += listEnumerator->Current();
     }
+    delete listEnumerator;
 
     Assert(arraySum == 10, "Iteration: wrong sum for array sequence");
     Assert(listSum == 10, "Iteration: wrong sum for list sequence");
@@ -485,6 +501,7 @@ bool RunAllTests() {
         {"DynamicArray: create/get", TestDynamicArrayCreateAndGet},
         {"DynamicArray: copy", TestDynamicArrayCopy},
         {"DynamicArray: resize/set/get", TestDynamicArrayResizeSetGet},
+        {"DynamicArray: push_back", TestDynamicArrayPushBack},
         {"DynamicArray: index errors", TestDynamicArrayIndexErrors},
         {"LinkedList: append/prepend/insert/get", TestLinkedListAppendPrependInsertGet},
         {"LinkedList: sublist/concat", TestLinkedListSubListAndConcat},
