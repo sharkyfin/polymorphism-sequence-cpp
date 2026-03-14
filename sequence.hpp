@@ -49,12 +49,16 @@ public:
     template <class Mapper>
     Sequence<T>* Map(Mapper mapper) const {
         Sequence<T>* result = CreateEmpty();
+        IEnumerator<T>* enumerator = nullptr;
         try {
-            for (int i = 0; i < GetLength(); ++i) {
-                AppendToResult(result, mapper(Get(i)));
+            enumerator = GetEnumerator();
+            while (enumerator->MoveNext()) {
+                AppendToResult(result, mapper(enumerator->Current()));
             }
+            delete enumerator;
             return result;
         } catch (...) {
+            delete enumerator;
             delete result;
             throw;
         }
@@ -63,15 +67,19 @@ public:
     template <class Predicate>
     Sequence<T>* Where(Predicate predicate) const {
         Sequence<T>* result = CreateEmpty();
+        IEnumerator<T>* enumerator = nullptr;
         try {
-            for (int i = 0; i < GetLength(); ++i) {
-                T value = Get(i);
+            enumerator = GetEnumerator();
+            while (enumerator->MoveNext()) {
+                T value = enumerator->Current();
                 if (predicate(value)) {
                     AppendToResult(result, value);
                 }
             }
+            delete enumerator;
             return result;
         } catch (...) {
+            delete enumerator;
             delete result;
             throw;
         }
@@ -83,39 +91,74 @@ public:
             throw EmptyCollectionException("Sequence: Reduce on empty sequence");
         }
 
-        T result = Get(0);
-        for (int i = 1; i < GetLength(); ++i) {
-            result = reducer(result, Get(i));
+        IEnumerator<T>* enumerator = nullptr;
+        try {
+            enumerator = GetEnumerator();
+            if (!enumerator->MoveNext()) {
+                delete enumerator;
+                throw EmptyCollectionException("Sequence: Reduce on empty sequence");
+            }
+
+            T result = enumerator->Current();
+            while (enumerator->MoveNext()) {
+                result = reducer(result, enumerator->Current());
+            }
+
+            delete enumerator;
+            return result;
+        } catch (...) {
+            delete enumerator;
+            throw;
         }
-        return result;
     }
 
     template <class TResult, class Folder>
     TResult Fold(TResult initialValue, Folder folder) const {
         TResult result = initialValue;
-        for (int i = 0; i < GetLength(); ++i) {
-            result = folder(result, Get(i));
+        IEnumerator<T>* enumerator = nullptr;
+        try {
+            enumerator = GetEnumerator();
+            while (enumerator->MoveNext()) {
+                result = folder(result, enumerator->Current());
+            }
+            delete enumerator;
+            return result;
+        } catch (...) {
+            delete enumerator;
+            throw;
         }
-        return result;
     }
 
     template <class Predicate>
     int Find(Predicate predicate) const {
-        for (int i = 0; i < GetLength(); ++i) {
-            if (predicate(Get(i))) {
-                return i;
+        IEnumerator<T>* enumerator = nullptr;
+        try {
+            enumerator = GetEnumerator();
+            int index = 0;
+            while (enumerator->MoveNext()) {
+                if (predicate(enumerator->Current())) {
+                    delete enumerator;
+                    return index;
+                }
+                ++index;
             }
+            delete enumerator;
+            return -1;
+        } catch (...) {
+            delete enumerator;
+            throw;
         }
-        return -1;
     }
 
     template <class Predicate>
     DynamicArray<Sequence<T>*> Split(Predicate isDelimiter, bool keepEmpty = false) const {
         DynamicArray<Sequence<T>*> parts(0);
         Sequence<T>* currentPart = CreateEmpty();
+        IEnumerator<T>* enumerator = nullptr;
         try {
-            for (int i = 0; i < GetLength(); ++i) {
-                T value = Get(i);
+            enumerator = GetEnumerator();
+            while (enumerator->MoveNext()) {
+                T value = enumerator->Current();
                 if (isDelimiter(value)) {
                     if (keepEmpty || currentPart->GetLength() > 0) {
                         int oldSize = parts.GetSize();
@@ -142,8 +185,10 @@ public:
                 currentPart = nullptr;
             }
 
+            delete enumerator;
             return parts;
         } catch (...) {
+            delete enumerator;
             for (int i = 0; i < parts.GetSize(); ++i) {
                 delete parts.Get(i);
             }
@@ -163,23 +208,48 @@ public:
         }
 
         Sequence<T>* result = CreateEmpty();
+        IEnumerator<T>* sourceEnumerator = nullptr;
+        IEnumerator<T>* replacementEnumerator = nullptr;
+
         try {
-            for (int i = 0; i < index; ++i) {
-                AppendToResult(result, Get(i));
-            }
+            sourceEnumerator = GetEnumerator();
+            bool insertedReplacement = false;
+            int position = 0;
 
-            if (replacement != nullptr) {
-                for (int i = 0; i < replacement->GetLength(); ++i) {
-                    AppendToResult(result, replacement->Get(i));
+            while (sourceEnumerator->MoveNext()) {
+                if (!insertedReplacement && position == index) {
+                    if (replacement != nullptr) {
+                        replacementEnumerator = replacement->GetEnumerator();
+                        while (replacementEnumerator->MoveNext()) {
+                            AppendToResult(result, replacementEnumerator->Current());
+                        }
+                        delete replacementEnumerator;
+                        replacementEnumerator = nullptr;
+                    }
+                    insertedReplacement = true;
                 }
+
+                T value = sourceEnumerator->Current();
+                if (position < index || position >= index + count) {
+                    AppendToResult(result, value);
+                }
+                ++position;
             }
 
-            for (int i = index + count; i < length; ++i) {
-                AppendToResult(result, Get(i));
+            if (!insertedReplacement && replacement != nullptr) {
+                replacementEnumerator = replacement->GetEnumerator();
+                while (replacementEnumerator->MoveNext()) {
+                    AppendToResult(result, replacementEnumerator->Current());
+                }
+                delete replacementEnumerator;
+                replacementEnumerator = nullptr;
             }
 
+            delete sourceEnumerator;
             return result;
         } catch (...) {
+            delete sourceEnumerator;
+            delete replacementEnumerator;
             delete result;
             throw;
         }
@@ -192,12 +262,42 @@ bool operator==(const Sequence<T>& left, const Sequence<T>& right) {
         return false;
     }
 
-    for (int i = 0; i < left.GetLength(); ++i) {
-        if (left.Get(i) != right.Get(i)) {
-            return false;
+    IEnumerator<T>* leftEnumerator = nullptr;
+    IEnumerator<T>* rightEnumerator = nullptr;
+
+    try {
+        leftEnumerator = left.GetEnumerator();
+        rightEnumerator = right.GetEnumerator();
+
+        while (true) {
+            bool hasLeft = leftEnumerator->MoveNext();
+            bool hasRight = rightEnumerator->MoveNext();
+
+            if (hasLeft != hasRight) {
+                delete leftEnumerator;
+                delete rightEnumerator;
+                return false;
+            }
+
+            if (!hasLeft) {
+                break;
+            }
+
+            if (leftEnumerator->Current() != rightEnumerator->Current()) {
+                delete leftEnumerator;
+                delete rightEnumerator;
+                return false;
+            }
         }
+
+        delete leftEnumerator;
+        delete rightEnumerator;
+        return true;
+    } catch (...) {
+        delete leftEnumerator;
+        delete rightEnumerator;
+        throw;
     }
-    return true;
 }
 
 template <class T>
