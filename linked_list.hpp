@@ -142,21 +142,21 @@ public:
         return new Enumerator(this);
     }
 
-    T GetFirst() const {
+    const T& GetFirst() const {
         if (length == 0) {
             throw EmptyCollectionException("LinkedList: list is empty");
         }
         return head->value;
     }
 
-    T GetLast() const {
+    const T& GetLast() const {
         if (length == 0) {
             throw EmptyCollectionException("LinkedList: list is empty");
         }
         return tail->value;
     }
 
-    T Get(int index) const {
+    const T& Get(int index) const {
         return GetNode(index)->value;
     }
 

@@ -19,9 +19,9 @@ protected:
     }
 
 public:
-    virtual T GetFirst() const = 0;
-    virtual T GetLast() const = 0;
-    virtual T Get(int index) const override = 0;
+    virtual const T& GetFirst() const = 0;
+    virtual const T& GetLast() const = 0;
+    virtual const T& Get(int index) const override = 0;
 
     virtual Sequence<T>* GetSubsequence(int startIndex, int endIndex) const = 0;
 
@@ -42,7 +42,7 @@ public:
 
     virtual ~Sequence() = default;
 
-    T operator[](int index) const {
+    const T& operator[](int index) const {
         return Get(index);
     }
 

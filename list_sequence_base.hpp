@@ -33,15 +33,15 @@ public:
 
     ListSequenceBase(const ListSequenceBase<T>& other) : data(other.data) {}
 
-    T GetFirst() const override {
+    const T& GetFirst() const override {
         return data.GetFirst();
     }
 
-    T GetLast() const override {
+    const T& GetLast() const override {
         return data.GetLast();
     }
 
-    T Get(int index) const override {
+    const T& Get(int index) const override {
         return data.Get(index);
     }
 

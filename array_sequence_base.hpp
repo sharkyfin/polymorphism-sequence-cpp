@@ -52,21 +52,21 @@ public:
 
     ArraySequenceBase(const ArraySequenceBase<T>& other) : data(other.data) {}
 
-    T GetFirst() const override {
+    const T& GetFirst() const override {
         if (data.GetSize() == 0) {
             throw EmptyCollectionException("ArraySequenceBase: sequence is empty");
         }
         return data.Get(0);
     }
 
-    T GetLast() const override {
+    const T& GetLast() const override {
         if (data.GetSize() == 0) {
             throw EmptyCollectionException("ArraySequenceBase: sequence is empty");
         }
         return data.Get(data.GetSize() - 1);
     }
 
-    T Get(int index) const override {
+    const T& Get(int index) const override {
         return data.Get(index);
     }
 

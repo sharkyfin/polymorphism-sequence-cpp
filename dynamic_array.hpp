@@ -161,7 +161,7 @@ public:
         return new Enumerator(this);
     }
 
-    T Get(int index) const {
+    const T& Get(int index) const {
         if (index < 0 || index >= size) {
             throw IndexOutOfRangeException("DynamicArray: index out of range");
         }
