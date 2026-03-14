@@ -46,20 +46,30 @@ public:
     }
 
     Sequence<T>* GetSubsequence(int startIndex, int endIndex) const override {
-        LinkedList<T>* subList = nullptr;
-        Sequence<T>* result = nullptr;
-        try {
-            subList = data.GetSubList(startIndex, endIndex);
-            result = this->CreateEmpty();
+        if (startIndex < 0 || endIndex < 0 || startIndex > endIndex || endIndex >= data.GetLength()) {
+            throw IndexOutOfRangeException("ListSequenceBase: invalid subsequence range");
+        }
 
-            for (int i = 0; i < subList->GetLength(); ++i) {
-                this->AppendToResult(result, subList->Get(i));
+        Sequence<T>* result = this->CreateEmpty();
+        IEnumerator<T>* enumerator = nullptr;
+
+        try {
+            enumerator = data.GetEnumerator();
+            int index = 0;
+            while (enumerator->MoveNext()) {
+                if (index >= startIndex && index <= endIndex) {
+                    this->AppendToResult(result, enumerator->Current());
+                }
+                if (index > endIndex) {
+                    break;
+                }
+                ++index;
             }
 
-            delete subList;
+            delete enumerator;
             return result;
         } catch (...) {
-            delete subList;
+            delete enumerator;
             delete result;
             throw;
         }
@@ -115,12 +125,18 @@ public:
         }
 
         Sequence<T>* result = this->Clone();
+        IEnumerator<T>* enumerator = nullptr;
+
         try {
-            for (int i = 0; i < list->GetLength(); ++i) {
-                this->AppendToResult(result, list->Get(i));
+            enumerator = list->GetEnumerator();
+            while (enumerator->MoveNext()) {
+                this->AppendToResult(result, enumerator->Current());
             }
+
+            delete enumerator;
             return result;
         } catch (...) {
+            delete enumerator;
             delete result;
             throw;
         }

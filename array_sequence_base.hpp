@@ -137,12 +137,18 @@ public:
         }
 
         Sequence<T>* result = this->Clone();
+        IEnumerator<T>* enumerator = nullptr;
+
         try {
-            for (int i = 0; i < list->GetLength(); ++i) {
-                this->AppendToResult(result, list->Get(i));
+            enumerator = list->GetEnumerator();
+            while (enumerator->MoveNext()) {
+                this->AppendToResult(result, enumerator->Current());
             }
+
+            delete enumerator;
             return result;
         } catch (...) {
+            delete enumerator;
             delete result;
             throw;
         }

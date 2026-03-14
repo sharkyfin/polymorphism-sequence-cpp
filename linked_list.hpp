@@ -61,16 +61,28 @@ public:
     class Enumerator : public IEnumerator<T> {
     private:
         const LinkedList<T>* list;
+        const Node* initial;
         const Node* current;
         bool started;
 
     public:
         explicit Enumerator(const LinkedList<T>* owner)
-            : list(owner), current(nullptr), started(false) {}
+            : list(owner), initial(owner->head), current(nullptr), started(false) {}
+
+        Enumerator(const LinkedList<T>* owner, int startIndex)
+            : list(owner), initial(nullptr), current(nullptr), started(false) {
+            if (startIndex < 0 || startIndex > owner->length) {
+                throw IndexOutOfRangeException("LinkedList::Enumerator: start index out of range");
+            }
+
+            if (startIndex < owner->length) {
+                initial = owner->GetNode(startIndex);
+            }
+        }
 
         bool MoveNext() override {
             if (!started) {
-                current = list->head;
+                current = initial;
                 started = true;
             } else if (current != nullptr) {
                 current = current->next;
@@ -142,6 +154,10 @@ public:
         return new Enumerator(this);
     }
 
+    IEnumerator<T>* GetEnumerator(int startIndex) const {
+        return new Enumerator(this, startIndex);
+    }
+
     const T& GetFirst() const {
         if (length == 0) {
             throw EmptyCollectionException("LinkedList: list is empty");
@@ -166,12 +182,18 @@ public:
         }
 
         LinkedList<T>* result = new LinkedList<T>();
+        IEnumerator<T>* enumerator = nullptr;
         try {
-            for (int i = startIndex; i <= endIndex; ++i) {
-                result->Append(Get(i));
+            enumerator = GetEnumerator(startIndex);
+            int count = endIndex - startIndex + 1;
+            for (int i = 0; i < count && enumerator->MoveNext(); ++i) {
+                result->Append(enumerator->Current());
             }
+
+            delete enumerator;
             return result;
         } catch (...) {
+            delete enumerator;
             delete result;
             throw;
         }
@@ -237,12 +259,17 @@ public:
         }
 
         LinkedList<T>* result = new LinkedList<T>(*this);
+        IEnumerator<T>* enumerator = nullptr;
         try {
-            for (int i = 0; i < list->GetLength(); ++i) {
-                result->Append(list->Get(i));
+            enumerator = list->GetEnumerator();
+            while (enumerator->MoveNext()) {
+                result->Append(enumerator->Current());
             }
+
+            delete enumerator;
             return result;
         } catch (...) {
+            delete enumerator;
             delete result;
             throw;
         }
